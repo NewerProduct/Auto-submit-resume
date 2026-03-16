@@ -13,7 +13,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       anonKey?: { success: boolean; error?: string };
       serviceKey?: { success: boolean; error?: string };
       ping?: { success: boolean; status?: number; statusText?: string; error?: string };
-    }
+    },
+    error: undefined as string | undefined
   };
 
   // 检查环境变量
