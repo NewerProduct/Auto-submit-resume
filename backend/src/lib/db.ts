@@ -16,13 +16,15 @@ import {
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-// 环境变量验证
-if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL 环境变量未设置');
-}
+// 运行时环境变量验证函数
+function validateEnvironment() {
+  if (!supabaseUrl) {
+    throw new Error('SUPABASE_URL 环境变量未设置');
+  }
 
-if (!supabaseAnonKey) {
-  throw new Error('SUPABASE_ANON_KEY 环境变量未设置');
+  if (!supabaseAnonKey) {
+    throw new Error('SUPABASE_ANON_KEY 环境变量未设置');
+  }
 }
 
 // 调试信息
@@ -81,6 +83,11 @@ export class DatabaseService {
 
   static async getUserByPhone(phone: string): Promise<User | null> {
     console.log('getUserByPhone called with phone:', phone);
+    
+    // 验证环境变量
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      throw new Error('数据库配置缺失');
+    }
     
     try {
       const { data, error } = await supabaseAdmin
