@@ -7,7 +7,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const results = {
     timestamp: new Date().toISOString(),
-    tests: []
+    tests: [] as Array<{
+      name: string;
+      success: boolean;
+      status?: number;
+      statusText?: string;
+      url?: string;
+      error?: string;
+      data?: any;
+    }>
   };
 
   // 测试1: 基本连接测试
