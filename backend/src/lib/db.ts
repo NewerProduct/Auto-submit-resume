@@ -33,7 +33,7 @@ console.log('Anon Key exists:', !!supabaseAnonKey);
 console.log('Anon Key length:', supabaseAnonKey?.length);
 
 // 客户端实例（用于API调用）
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -49,7 +49,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // 服务端实例（使用 service_role key）
-export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey, {
+export const supabaseAdmin = createClient(supabaseUrl!, process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
