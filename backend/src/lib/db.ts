@@ -13,8 +13,17 @@ import {
   CreateBatchDeliveryParams,
 } from '@/types';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// 环境变量验证
+if (!supabaseUrl) {
+  throw new Error('SUPABASE_URL 环境变量未设置');
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('SUPABASE_ANON_KEY 环境变量未设置');
+}
 
 // 调试信息
 console.log('Supabase URL:', supabaseUrl);
@@ -37,8 +46,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// 服务端实例（暂时也使用anon key）
-export const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
+// 服务端实例（使用 service_role key）
+export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -83,13 +92,28 @@ export class DatabaseService {
       console.log('getUserByPhone result:', { data, error });
 
       if (error && error.code !== 'PGRST116') {
-        console.error('获取用户失败:', error);
-        throw new Error(`获取用户失败: ${error.message}`);
+        console.error('获取用户失败 - Supabase错误:', error);
+        throw new Error(`获取用户失败: ${error.message} (代码: ${error.code || 'UNKNOWN'})`);
       }
 
       return data;
     } catch (err) {
-      console.error('getUserByPhone unexpected error:', err);
+      console.error('getUserByPhone 意外错误:', {
+        error: err,
+        errorMessage: err instanceof Error ? err.message : '未知错误',
+        errorStack: err instanceof Error ? err.stack : undefined,
+        phone
+      });
+      
+      // 如果是网络相关错误，提供更具体的错误信息
+      if (err instanceof Error && (
+        err.message.includes('fetch failed') || 
+        err.message.includes('ECONNREFUSED') ||
+        err.message.includes('ENOTFOUND')
+      )) {
+        throw new Error('数据库连接失败，请检查网络连接和数据库配置');
+      }
+      
       throw new Error('获取用户失败');
     }
   }
