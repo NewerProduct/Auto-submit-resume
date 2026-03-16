@@ -15,13 +15,16 @@ import {
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// 调试信息
+console.log('Supabase URL:', supabaseUrl);
+console.log('Anon Key exists:', !!supabaseAnonKey);
 
 // 客户端实例（用于API调用）
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// 服务端实例（用于后台操作）
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// 服务端实例（暂时也使用anon key）
+export const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey);
 
 export class DatabaseService {
   // 用户相关操作
@@ -41,11 +44,15 @@ export class DatabaseService {
   }
 
   static async getUserByPhone(phone: string): Promise<User | null> {
-    const { data, error } = await supabase
+    console.log('getUserByPhone called with phone:', phone);
+    
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('phone', phone)
       .single();
+
+    console.log('getUserByPhone result:', { data, error });
 
     if (error && error.code !== 'PGRST116') {
       console.error('获取用户失败:', error);
@@ -56,7 +63,7 @@ export class DatabaseService {
   }
 
   static async getUserById(id: string): Promise<User | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', id)
@@ -130,7 +137,7 @@ export class DatabaseService {
   }
 
   static async getResumeById(id: string, userId?: string): Promise<Resume | null> {
-    let query = supabase.from('resumes').select('*').eq('id', id);
+    let query = supabaseAdmin.from('resumes').select('*').eq('id', id);
     
     if (userId) {
       query = query.eq('user_id', userId);
