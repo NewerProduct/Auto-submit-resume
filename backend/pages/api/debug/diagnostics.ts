@@ -9,7 +9,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const diagnostics = {
     timestamp: new Date().toISOString(),
     environment: {},
-    connectionTests: {}
+    connectionTests: {} as {
+      anonKey?: { success: boolean; error?: string };
+      serviceKey?: { success: boolean; error?: string };
+      ping?: { success: boolean; status?: number; statusText?: string; error?: string };
+    }
   };
 
   // 检查环境变量
