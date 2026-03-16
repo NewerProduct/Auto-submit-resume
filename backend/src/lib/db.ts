@@ -19,12 +19,39 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
 // 调试信息
 console.log('Supabase URL:', supabaseUrl);
 console.log('Anon Key exists:', !!supabaseAnonKey);
+console.log('Anon Key length:', supabaseAnonKey?.length);
 
 // 客户端实例（用于API调用）
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'Accept': 'application/json',
+    },
+  },
+});
 
 // 服务端实例（暂时也使用anon key）
-export const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey);
+export const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'Accept': 'application/json',
+    },
+  },
+});
 
 export class DatabaseService {
   // 用户相关操作
@@ -46,20 +73,25 @@ export class DatabaseService {
   static async getUserByPhone(phone: string): Promise<User | null> {
     console.log('getUserByPhone called with phone:', phone);
     
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('phone', phone)
-      .single();
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('phone', phone)
+        .single();
 
-    console.log('getUserByPhone result:', { data, error });
+      console.log('getUserByPhone result:', { data, error });
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('获取用户失败:', error);
+      if (error && error.code !== 'PGRST116') {
+        console.error('获取用户失败:', error);
+        throw new Error(`获取用户失败: ${error.message}`);
+      }
+
+      return data;
+    } catch (err) {
+      console.error('getUserByPhone unexpected error:', err);
       throw new Error('获取用户失败');
     }
-
-    return data;
   }
 
   static async getUserById(id: string): Promise<User | null> {
