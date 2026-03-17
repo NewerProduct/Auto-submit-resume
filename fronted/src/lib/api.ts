@@ -24,6 +24,7 @@ async function request<T>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+    credentials: 'include', // 支持 CORS 凭据
     ...options,
   }
 
