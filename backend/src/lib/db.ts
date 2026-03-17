@@ -46,6 +46,10 @@ export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
       'Accept': 'application/json',
     },
   },
+  // 添加SSL配置
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 // 服务端实例（使用 service_role key）
@@ -61,6 +65,10 @@ export const supabaseAdmin = createClient(supabaseUrl!, process.env.SUPABASE_SER
     headers: {
       'Accept': 'application/json',
     },
+  },
+  // 添加SSL配置
+  ssl: {
+    rejectUnauthorized: false,
   },
 });
 
@@ -81,49 +89,100 @@ export class DatabaseService {
     return data;
   }
 
-  static async getUserByPhone(phone: string): Promise<User | null> {
-    console.log('getUserByPhone called with phone:', phone);
+  // static async getUserByPhone(phone: string): Promise<User | null> {
+  //   console.log('getUserByPhone called with phone:', phone);
     
-    // 验证环境变量
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-      throw new Error('数据库配置缺失');
-    }
+  //   // 验证环境变量
+  //   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  //     throw new Error('数据库配置缺失');
+  //   }
     
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .eq('phone', phone)
-        .single();
+  //   try {
+  //     const { data, error } = await supabaseAdmin
+  //       .from('users')
+  //       .select('*')
+  //       .eq('phone', phone)
+  //       .single();
 
-      console.log('getUserByPhone result:', { data, error });
+  //     console.log('getUserByPhone result:', { data, error });
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('获取用户失败 - Supabase错误:', error);
-        throw new Error(`获取用户失败: ${error.message} (代码: ${error.code || 'UNKNOWN'})`);
-      }
+  //     if (error && error.code !== 'PGRST116') {
+  //       console.error('获取用户失败 - Supabase错误:', error);
+  //       throw new Error(`获取用户失败: ${error.message} (代码: ${error.code || 'UNKNOWN'})`);
+  //     }
 
-      return data;
-    } catch (err) {
-      console.error('getUserByPhone 意外错误:', {
-        error: err,
-        errorMessage: err instanceof Error ? err.message : '未知错误',
-        errorStack: err instanceof Error ? err.stack : undefined,
-        phone
-      });
+  //     return data;
+  //   } catch (err) {
+  //     console.error('getUserByPhone 意外错误:', {
+  //       error: err,
+  //       errorMessage: err instanceof Error ? err.message : '未知错误',
+  //       errorStack: err instanceof Error ? err.stack : undefined,
+  //       phone
+  //     });
       
-      // 如果是网络相关错误，提供更具体的错误信息
-      if (err instanceof Error && (
-        err.message.includes('fetch failed') || 
-        err.message.includes('ECONNREFUSED') ||
-        err.message.includes('ENOTFOUND')
-      )) {
-        throw new Error('数据库连接失败，请检查网络连接和数据库配置');
-      }
+  //     // 如果是网络相关错误，提供更具体的错误信息
+  //     if (err instanceof Error && (
+  //       err.message.includes('fetch failed') || 
+  //       err.message.includes('ECONNREFUSED') ||
+  //       err.message.includes('ENOTFOUND')
+  //     )) {
+  //       throw new Error('数据库连接失败，请检查网络连接和数据库配置');
+  //     }
       
-      throw new Error('获取用户失败');
+  //     throw new Error('获取用户失败');
+  //   }
+  // }
+  static async getUserByPhone(phone: string) {
+  try {
+    // 1. 诊断：先手动测试 Supabase API 连通性
+    const testUrl = `${process.env.SUPABASE_URL}/rest/v1/users?select=*&phone=eq.${phone}`;
+    console.log('=== 网络诊断开始 ===');
+    console.log('请求 URL:', testUrl);
+    console.log('Anon Key 前10位:', process.env.SUPABASE_ANON_KEY?.substring(0, 10));
+    console.log('Node 版本:', process.version);
+    console.log('环境变量 NODE_ENV:', process.env.NODE_ENV);
+    
+    // 2. 手动发起 fetch 请求（绕过 Supabase 客户端，直接测试网络）
+    const testResponse = await fetch(testUrl, {
+      method: 'GET',
+      headers: {
+        'apikey': process.env.SUPABASE_ANON_KEY!,
+        'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY!}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
+    console.log('手动 fetch 状态码:', testResponse.status);
+    console.log('=== 网络诊断结束 ===');
+
+    // 3. 原有 Supabase 逻辑
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err: any) {
+    console.error('=== 错误详情 ===');
+    console.error('错误类型:', err.constructor.name);
+    console.error('错误代码:', err.code || '无');
+    console.error('错误原因:', err.cause || '无');
+    console.error('完整错误:', err);
+    
+    // 区分不同失败类型
+    if (err.message.includes('fetch failed')) {
+      // 核心判断：不同环境的 fetch 失败原因
+      if (process.env.VERCEL === '1') {
+        throw new Error('Vercel 环境网络隔离：请检查 Supabase IP 白名单/区域配置');
+      } else {
+        throw new Error('本地网络问题：请检查代理/防火墙/Supabase 区域');
+      }
     }
+    throw new Error(`获取用户失败: ${err.message} (代码: ${err.code || 'UNKNOWN'})`);
   }
+}
 
   static async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabaseAdmin
