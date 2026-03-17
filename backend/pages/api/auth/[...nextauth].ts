@@ -3,6 +3,18 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { AuthService } from '@/lib/auth';
 import { DatabaseService } from '@/lib/db';
 import { KVService } from '@/lib/kv';
+import { NextApiRequest, NextApiResponse } from 'next';
+
+// 处理 OPTIONS 请求 (CORS preflight)
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'OPTIONS') {
+    res.status(200).end()
+    return
+  }
+  
+  // 其他请求交给 NextAuth 处理
+  return NextAuth(authOptions)(req, res);
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -113,8 +125,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
-
-export default NextAuth(authOptions);
 
 // 扩展类型定义
 declare module 'next-auth' {
