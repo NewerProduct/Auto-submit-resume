@@ -1,9 +1,0 @@
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://auto-submit-resume-348j52a0c-newerproducts-projects.vercel.app",
-    "NEXTAUTH_SECRET": "43a3baf6e88c59e4102d4d7ef26e30f9f5fdebc56077b834d8662b8302267084"
-  }
-}
