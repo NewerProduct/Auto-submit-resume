@@ -13,7 +13,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   // 其他请求交给 NextAuth 处理
-  return NextAuth(authOptions)(req, res);
+  const nextAuthHandler = NextAuth(authOptions);
+  return (nextAuthHandler as any)(req, res);
 }
 
 export const authOptions: NextAuthOptions = {
