@@ -130,11 +130,16 @@ export class DatabaseService {
         .from('users')
         .select('*')
         .eq('phone', phone)
-        .maybeSingle(); // 使用 maybeSingle() 而不是 single()
+        .maybeSingle();
+
+      // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+      if (error && error.code === 'PGRST116') {
+        return null;
+      }
 
       if (error) {
         console.error('Supabase查询错误:', error);
-        throw error;
+        throw new Error(`获取用户失败: ${error.message} (代码: ${error.code || 'UNKNOWN'})`);
       }
       
       return data; // 可能是 null
@@ -150,6 +155,11 @@ export class DatabaseService {
       .select('*')
       .eq('id', id)
       .maybeSingle();
+
+    // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+    if (error && error.code === 'PGRST116') {
+      return null;
+    }
 
     if (error) {
       console.error('获取用户失败:', error);
@@ -227,6 +237,11 @@ export class DatabaseService {
 
     const { data, error } = await query.maybeSingle();
 
+    // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+    if (error && error.code === 'PGRST116') {
+      return null;
+    }
+
     if (error) {
       console.error('获取简历失败:', error);
       throw new Error('获取简历失败');
@@ -294,6 +309,11 @@ export class DatabaseService {
       .eq('is_default', true)
       .maybeSingle();
 
+    // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+    if (error && error.code === 'PGRST116') {
+      return null;
+    }
+
     if (error) {
       console.error('获取默认简历失败:', error);
       throw new Error('获取默认简历失败');
@@ -340,6 +360,11 @@ export class DatabaseService {
       .eq('user_id', userId)
       .eq('platform', platform)
       .maybeSingle();
+
+    // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+    if (error && error.code === 'PGRST116') {
+      return null;
+    }
 
     if (error) {
       console.error('获取平台账户失败:', error);
@@ -477,6 +502,11 @@ export class DatabaseService {
       .eq('job_id', jobId)
       .maybeSingle();
 
+    // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+    if (error && error.code === 'PGRST116') {
+      return false;
+    }
+
     if (error) {
       console.error('检查投递记录失败:', error);
       throw new Error('检查投递记录失败');
@@ -508,6 +538,11 @@ export class DatabaseService {
       .eq('id', id)
       .eq('user_id', userId)
       .maybeSingle();
+
+    // 如果是 PGRST116 错误（没有找到记录），这是正常情况，返回 null
+    if (error && error.code === 'PGRST116') {
+      return null;
+    }
 
     if (error) {
       console.error('获取批量投递失败:', error);
