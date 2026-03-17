@@ -153,7 +153,18 @@ export class DatabaseService {
       .eq('phone', phone)
       .single();
 
-    if (error) throw error;
+    // PGRST116 表示没有找到记录，这是正常情况，返回null
+    if (error && error.code === 'PGRST116') {
+      console.log('用户不存在，返回null');
+      return null;
+    }
+
+    if (error) {
+      console.error('Supabase查询错误:', error);
+      throw error;
+    }
+    
+    console.log('找到用户:', data);
     return data;
   } catch (err: any) {
     console.error('=== 错误详情 ===');
