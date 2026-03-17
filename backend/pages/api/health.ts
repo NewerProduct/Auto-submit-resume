@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       connectivity: {
         canReachSupabase: false,
-        supabaseError: null,
+        supabaseError: null as string | null,
       }
     };
 
