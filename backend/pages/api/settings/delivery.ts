@@ -5,6 +5,12 @@ import { BossPlatformService } from '@/lib/platforms/boss';
 import { ApiResponse, DeliveryConfig } from '@/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse>) {
+  // 处理 OPTIONS 请求 (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end()
+    return
+  }
+
   // 获取用户会话
   const session = await getSession({ req });
   

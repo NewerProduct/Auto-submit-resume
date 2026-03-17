@@ -4,6 +4,12 @@ import { ApiResponse, WebhookPayload } from '@/types';
 import crypto from 'crypto';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse>) {
+  // 处理 OPTIONS 请求 (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end()
+    return
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
