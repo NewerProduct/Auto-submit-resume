@@ -46,10 +46,6 @@ export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
       'Accept': 'application/json',
     },
   },
-  // 添加SSL配置
-  ssl: {
-    rejectUnauthorized: false,
-  },
 });
 
 // 服务端实例（使用 service_role key）
@@ -65,10 +61,6 @@ export const supabaseAdmin = createClient(supabaseUrl!, process.env.SUPABASE_SER
     headers: {
       'Accept': 'application/json',
     },
-  },
-  // 添加SSL配置
-  ssl: {
-    rejectUnauthorized: false,
   },
 });
 
@@ -149,14 +141,13 @@ export class DatabaseService {
         'apikey': process.env.SUPABASE_ANON_KEY!,
         'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY!}`,
         'Content-Type': 'application/json'
-      },
-      timeout: 10000
+      }
     });
     console.log('手动 fetch 状态码:', testResponse.status);
     console.log('=== 网络诊断结束 ===');
 
     // 3. 原有 Supabase 逻辑
-    const { data, error } = await this.supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('phone', phone)
