@@ -1,9 +1,25 @@
 import { kv } from '@vercel/kv';
 import { RateLimitInfo } from '@/types';
 
+// 检查 KV 环境变量是否可用
+const isKvAvailable = () => {
+  return process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
+};
+
 export class KVService {
   // 频率限制相关操作
   static async checkRateLimit(userId: string, platform: string, limit: number): Promise<RateLimitInfo> {
+    if (!isKvAvailable()) {
+      // 如果 KV 不可用，返回默认值（不限制）
+      return {
+        platform,
+        dailyLimit: limit,
+        usedToday: 0,
+        remaining: limit,
+        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      };
+    }
+
     const key = `rate_limit:${userId}:${platform}`;
     const dateKey = `rate_limit:${userId}:${platform}:${new Date().toISOString().split('T')[0]}`;
     
@@ -39,6 +55,16 @@ export class KVService {
   }
   
   static async getRateLimitInfo(userId: string, platform: string, limit: number): Promise<RateLimitInfo> {
+    if (!isKvAvailable()) {
+      return {
+        platform,
+        dailyLimit: limit,
+        usedToday: 0,
+        remaining: limit,
+        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      };
+    }
+
     const dateKey = `rate_limit:${userId}:${platform}:${new Date().toISOString().split('T')[0]}`;
     const todayCount = await kv.get(dateKey) as string;
     const usedToday = todayCount ? parseInt(todayCount) : 0;
@@ -54,6 +80,10 @@ export class KVService {
   
   // 缓存相关操作
   static async setCache(key: string, value: any, ttl?: number): Promise<void> {
+    if (!isKvAvailable()) {
+      return; // 静默失败
+    }
+    
     const serializedValue = JSON.stringify(value);
     if (ttl) {
       await kv.setex(key, ttl, serializedValue);
@@ -63,6 +93,10 @@ export class KVService {
   }
   
   static async getCache<T>(key: string): Promise<T | null> {
+    if (!isKvAvailable()) {
+      return null;
+    }
+    
     const value = await kv.get(key) as string;
     if (!value) return null;
     
@@ -74,10 +108,18 @@ export class KVService {
   }
   
   static async deleteCache(key: string): Promise<void> {
+    if (!isKvAvailable()) {
+      return; // 静默失败
+    }
+    
     await kv.del(key);
   }
   
   static async clearCache(pattern: string): Promise<void> {
+    if (!isKvAvailable()) {
+      return; // 静默失败
+    }
+    
     const keys = await kv.keys(pattern);
     if (keys.length > 0) {
       await kv.del(...keys);
@@ -165,6 +207,15 @@ export class KVService {
   
   // API限流
   static async checkApiRateLimit(ip: string, endpoint: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetTime: Date }> {
+    if (!isKvAvailable()) {
+      // 如果 KV 不可用，允许所有请求
+      return {
+        allowed: true,
+        remaining: limit,
+        resetTime: new Date(Date.now() + windowMs),
+      };
+    }
+
     const key = `api_rate_limit:${ip}:${endpoint}`;
     const windowKey = `api_rate_limit:${ip}:${endpoint}:${Math.floor(Date.now() / windowMs)}`;
     
