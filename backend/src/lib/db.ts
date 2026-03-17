@@ -69,7 +69,11 @@ export class DatabaseService {
   static async createUser(userData: CreateUserParams): Promise<User> {
     const { data, error } = await supabaseAdmin
       .from('users')
-      .insert(userData)
+      .insert({
+        phone: userData.phone,
+        email: userData.email,
+        password_hash: userData.passwordHash // 使用正确的列名 password_hash
+      })
       .select()
       .single();
 
@@ -78,7 +82,11 @@ export class DatabaseService {
       throw new Error('创建用户失败');
     }
 
-    return data;
+    // 转换数据库字段名到 TypeScript 接口字段名
+    return {
+      ...data,
+      passwordHash: data.password_hash
+    };
   }
 
   // static async getUserByPhone(phone: string): Promise<User | null> {
@@ -142,6 +150,16 @@ export class DatabaseService {
         throw new Error(`获取用户失败: ${error.message} (代码: ${error.code || 'UNKNOWN'})`);
       }
       
+      // 转换数据库字段名到 TypeScript 接口字段名
+      if (data) {
+        return {
+          ...data,
+          passwordHash: data.password_hash,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+      }
+      
       return data; // 可能是 null
     } catch (err: any) {
       console.error('获取用户失败:', err);
@@ -166,13 +184,36 @@ export class DatabaseService {
       throw new Error('获取用户失败');
     }
 
+    // 转换数据库字段名到 TypeScript 接口字段名
+    if (data) {
+      return {
+        ...data,
+        passwordHash: data.password_hash,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+
     return data;
   }
 
   static async updateUser(id: string, userData: UpdateUserParams): Promise<User> {
-    const { data, error } = await supabase
+    // 转换 TypeScript 字段名到数据库字段名
+    const updateData: any = {
+      updated_at: new Date()
+    };
+    
+    if (userData.email !== undefined) {
+      updateData.email = userData.email;
+    }
+    
+    if (userData.passwordHash !== undefined) {
+      updateData.password_hash = userData.passwordHash;
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('users')
-      .update({ ...userData, updatedAt: new Date() })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -182,7 +223,13 @@ export class DatabaseService {
       throw new Error('更新用户失败');
     }
 
-    return data;
+    // 转换数据库字段名到 TypeScript 接口字段名
+    return {
+      ...data,
+      passwordHash: data.password_hash,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   }
 
   static async deleteUser(id: string): Promise<void> {
