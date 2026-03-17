@@ -124,76 +124,34 @@ export class DatabaseService {
   //     throw new Error('获取用户失败');
   //   }
   // }
-  static async getUserByPhone(phone: string) {
-  try {
-    // 1. 诊断：先手动测试 Supabase API 连通性
-    const testUrl = `${process.env.SUPABASE_URL}/rest/v1/users?select=*&phone=eq.${phone}`;
-    console.log('=== 网络诊断开始 ===');
-    console.log('请求 URL:', testUrl);
-    console.log('Anon Key 前10位:', process.env.SUPABASE_ANON_KEY?.substring(0, 10));
-    console.log('Node 版本:', process.version);
-    console.log('环境变量 NODE_ENV:', process.env.NODE_ENV);
-    
-    // 2. 手动发起 fetch 请求（绕过 Supabase 客户端，直接测试网络）
-    const testResponse = await fetch(testUrl, {
-      method: 'GET',
-      headers: {
-        'apikey': process.env.SUPABASE_ANON_KEY!,
-        'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY!}`,
-        'Content-Type': 'application/json'
+  static async getUserByPhone(phone: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('phone', phone)
+        .maybeSingle(); // 使用 maybeSingle() 而不是 single()
+
+      if (error) {
+        console.error('Supabase查询错误:', error);
+        throw error;
       }
-    });
-    console.log('手动 fetch 状态码:', testResponse.status);
-    console.log('=== 网络诊断结束 ===');
-
-    // 3. 原有 Supabase 逻辑
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('phone', phone)
-      .single();
-
-    // PGRST116 表示没有找到记录，这是正常情况，返回null
-    if (error && error.code === 'PGRST116') {
-      console.log('用户不存在，返回null');
-      return null;
+      
+      return data; // 可能是 null
+    } catch (err: any) {
+      console.error('获取用户失败:', err);
+      throw new Error(`获取用户失败: ${err.message} (代码: ${err.code || 'UNKNOWN'})`);
     }
-
-    if (error) {
-      console.error('Supabase查询错误:', error);
-      throw error;
-    }
-    
-    console.log('找到用户:', data);
-    return data;
-  } catch (err: any) {
-    console.error('=== 错误详情 ===');
-    console.error('错误类型:', err.constructor.name);
-    console.error('错误代码:', err.code || '无');
-    console.error('错误原因:', err.cause || '无');
-    console.error('完整错误:', err);
-    
-    // 区分不同失败类型
-    if (err.message.includes('fetch failed')) {
-      // 核心判断：不同环境的 fetch 失败原因
-      if (process.env.VERCEL === '1') {
-        throw new Error('Vercel 环境网络隔离：请检查 Supabase IP 白名单/区域配置');
-      } else {
-        throw new Error('本地网络问题：请检查代理/防火墙/Supabase 区域');
-      }
-    }
-    throw new Error(`获取用户失败: ${err.message} (代码: ${err.code || 'UNKNOWN'})`);
   }
-}
 
   static async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('获取用户失败:', error);
       throw new Error('获取用户失败');
     }
@@ -267,9 +225,9 @@ export class DatabaseService {
       query = query.eq('user_id', userId);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('获取简历失败:', error);
       throw new Error('获取简历失败');
     }
@@ -334,9 +292,9 @@ export class DatabaseService {
       .select('*')
       .eq('user_id', userId)
       .eq('is_default', true)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('获取默认简历失败:', error);
       throw new Error('获取默认简历失败');
     }
@@ -381,9 +339,9 @@ export class DatabaseService {
       .select('*')
       .eq('user_id', userId)
       .eq('platform', platform)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('获取平台账户失败:', error);
       throw new Error('获取平台账户失败');
     }
@@ -517,9 +475,9 @@ export class DatabaseService {
       .eq('user_id', userId)
       .eq('platform', platform)
       .eq('job_id', jobId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('检查投递记录失败:', error);
       throw new Error('检查投递记录失败');
     }
@@ -549,9 +507,9 @@ export class DatabaseService {
       .select('*')
       .eq('id', id)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('获取批量投递失败:', error);
       throw new Error('获取批量投递失败');
     }
